@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Skylander WebNFC</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 20px; background: #121212; color: white; }
+        button { padding: 15px 30px; font-size: 18px; border-radius: 8px; border: none; background: #6200ee; color: white; cursor: pointer; }
+        #status { margin-top: 20px; font-size: 16px; color: #03dac6; }
+        #log { margin-top: 10px; font-weight: bold; font-size: 20px; color: #ff0266; }
+    </style>
+</head>
+<body>
+
+    <h1>Portal NFC no Navegador</h1>
+    <button id="btnAtivar">Ativar Leitor NFC</button>
+    
+    <div id="status">Aguardando ativação...</div>
+    <div id="log">---</div>
+
+    <script>
+        const btnAtivar = document.getElementById('btnAtivar');
+        const statusDiv = document.getElementById('status');
+        const logDiv = document.getElementById('log');
+
+        // IP e Porta do seu computador na rede local
+        const PC_SERVER_URL = 'http://192.168.1.15:5000/scan';
+
+        btnAtivar.addEventListener('click', async () => {
+            // Verifica se o navegador suporta Web NFC
+            if (!('NDEFReader' in window)) {
+                statusDiv.innerText = "Web NFC não é suportado neste navegador/dispositivo (use o Chrome no Android).";
+                return;
+            }
+
+            try {
+                const ndef = new NDEFReader();
+                await ndef.scan();
+                
+                statusDiv.innerText = "Leitor ATIVO! Encoste o Skylander na traseira do celular.";
+                btnAtivar.style.display = 'none';
+
+                // Disparado sempre que uma tag NFC é encostada
+                ndef.addEventListener("reading", ({ serialNumber }) => {
+                    logDiv.innerText = `UID Lido: ${serialNumber}`;
+                    
+                    // Envia automaticamente os dados para o seu PC via Wi-Fi
+                    enviarParaPC(serialNumber);
+                });
+
+                ndef.addEventListener("readingerror", () => {
+                    statusDiv.innerText = "Erro ao ler a tag NFC. Tente aproximar novamente.";
+                });
+
+            } catch (error) {
+                statusDiv.innerText = `Erro ao iniciar NFC: ${error}`;
+            }
+        });
+
+        // Função que transmite o dado automaticamente via HTTP
+        function enviarParaPC(uid) {
+            fetch(`${PC_SERVER_URL}?uid=${uid}`, { method: 'POST' })
+                .then(response => console.log('Enviado com sucesso para o PC!'))
+                .catch(err => console.error('Erro ao enviar para o PC:', err));
+        }
+    </script>
+</body>
+</html>
