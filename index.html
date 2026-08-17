@@ -1,80 +1,247 @@
-<script>
-    const btnAtivar = document.getElementById('btnAtivar');
-    const statusDiv = document.getElementById('status');
-    const logDiv = document.getElementById('log');
-    const portalRing = document.getElementById('portalRing');
-    const portalIcon = document.getElementById('portalIcon');
-    const ipInput = document.getElementById('ipInput');
-
-    let currentUID = null;
-
-    btnAtivar.addEventListener('click', async () => {
-        if (!('NDEFReader' in window)) {
-            statusDiv.innerText = "Web NFC não suportado no navegador (Use Chrome Android).";
-            return;
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skylanders Portal - WebNFC</title>
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --card-bg: #1f2833;
+            --primary: #8a2be2;
+            --accent-green: #00ff66;
+            --accent-red: #ff0055;
+            --text-color: #c5c6c7;
         }
 
-        try {
-            const ndef = new NDEFReader();
-            await ndef.scan();
-            
-            statusDiv.innerText = "Portal Online! Aproxime o Skylander.";
-            
-            // Transforma o botão "Ativar" em um botão para limpar o portal se precisar
-            btnAtivar.innerText = "Remover do Portal";
-            btnAtivar.style.background = "linear-gradient(135deg, #ff0055, #990033)";
-            btnAtivar.removeEventListener('click', arguments.callee);
-            btnAtivar.addEventListener('click', limparPortal);
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
-            ipInput.style.display = 'none';
-
-            ndef.addEventListener("reading", ({ serialNumber }) => {
-                if (!serialNumber) return;
-                const uidLido = serialNumber.toLowerCase();
-
-                // Se aproximar a mesma tag que já está ativa -> Remove
-                if (currentUID === uidLido) {
-                    limparPortal();
-                } else {
-                    // Se for uma tag nova -> Ativa no portal
-                    ativarSkylander(uidLido);
-                }
-            });
-
-        } catch (error) {
-            statusDiv.innerText = `Erro ao acessar NFC: ${error}`;
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: radial-gradient(circle at center, #1a0033 0%, var(--bg-color) 70%);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
         }
-    });
 
-    function ativarSkylander(uid) {
-        currentUID = uid;
-        const serverHost = ipInput.value.trim();
+        .container {
+            background: rgba(31, 40, 51, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(138, 43, 226, 0.3);
+            border-radius: 20px;
+            padding: 30px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+            text-align: center;
+        }
 
-        portalRing.classList.add('active');
-        portalIcon.innerText = "⚡";
-        logDiv.innerText = `Skylander: ${uid}`;
-        
-        enviarParaPC(serverHost, uid, "presente");
-    }
+        h1 {
+            font-size: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #fff;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px var(--primary);
+        }
 
-    function limparPortal() {
-        if (!currentUID) return;
-        const serverHost = ipInput.value.trim();
+        /* Portal Animação */
+        .portal-ring {
+            width: 180px;
+            height: 180px;
+            margin: 20px auto;
+            border-radius: 50%;
+            border: 4px dashed var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: 0 0 20px rgba(138, 43, 226, 0.4);
+            animation: rotatePortal 12s linear infinite;
+            transition: all 0.4s ease;
+        }
 
-        portalRing.classList.remove('active');
-        portalIcon.innerText = "🔮";
-        logDiv.innerText = "Portal Vazio";
-        
-        enviarParaPC(serverHost, currentUID, "removido");
-        currentUID = null;
-    }
+        @keyframes rotatePortal {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
 
-    function enviarParaPC(host, uid, status) {
-        // Garante que o endereço comece com http://
-        let urlBase = host.startsWith('http') ? host : `http://${host}`;
-        const url = `${urlBase}/scan?uid=${uid}&status=${status}`;
+        .portal-inner {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(138,43,226,0.2) 0%, rgba(0,0,0,0.8) 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            animation: pulsePortal 2s ease-in-out infinite alternate;
+        }
 
-        fetch(url, { method: 'POST' })
-            .catch(() => statusDiv.innerText = "Erro ao conectar com o PC!");
-    }
-</script>
+        @keyframes pulsePortal {
+            from { box-shadow: inset 0 0 10px var(--primary); }
+            to { box-shadow: inset 0 0 25px var(--primary); }
+        }
+
+        /* Modos Ativo / Inativo do Portal */
+        .portal-ring.active {
+            border: 4px solid var(--accent-green);
+            box-shadow: 0 0 35px var(--accent-green);
+            animation: none;
+        }
+
+        .portal-ring.active .portal-inner {
+            background: radial-gradient(circle, rgba(0,255,102,0.3) 0%, rgba(0,0,0,0.9) 100%);
+        }
+
+        .ip-input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #8a2be2, #4a00e0);
+            color: #fff;
+            font-weight: bold;
+            font-size: 1rem;
+            text-transform: uppercase;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(138, 43, 226, 0.4);
+            transition: transform 0.2s, box-shadow 0.2s, background 0.3s;
+        }
+
+        .btn:active { transform: scale(0.98); }
+
+        .status-badge {
+            margin-top: 15px;
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        .log-text {
+            margin-top: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #fff;
+            min-height: 28px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Portal of Power</h1>
+
+        <input type="text" id="ipInput" class="ip-input" placeholder="IP do PC (ex: 192.168.1.15:5000)" value="192.168.1.15:5000">
+
+        <div class="portal-ring" id="portalRing">
+            <div class="portal-inner">
+                <span id="portalIcon" style="font-size: 2.5rem;">🔮</span>
+            </div>
+        </div>
+
+        <button id="btnAtivar" class="btn">Ativar Portal NFC</button>
+
+        <div class="status-badge" id="status">Aguardando ativação...</div>
+        <div class="log-text" id="log">---</div>
+    </div>
+
+    <script>
+        const btnAtivar = document.getElementById('btnAtivar');
+        const statusDiv = document.getElementById('status');
+        const logDiv = document.getElementById('log');
+        const portalRing = document.getElementById('portalRing');
+        const portalIcon = document.getElementById('portalIcon');
+        const ipInput = document.getElementById('ipInput');
+
+        let currentUID = null;
+
+        btnAtivar.addEventListener('click', async () => {
+            // Se o botão já foi transformado em "Remover", aciona a função de limpeza
+            if (btnAtivar.innerText === "REMOVER DO PORTAL") {
+                limparPortal();
+                return;
+            }
+
+            if (!('NDEFReader' in window)) {
+                statusDiv.innerText = "Web NFC não suportado no navegador (Use Chrome Android).";
+                return;
+            }
+
+            try {
+                const ndef = new NDEFReader();
+                await ndef.scan();
+                
+                statusDiv.innerText = "Portal Online! Aproxime o Skylander.";
+                
+                // Transforma o botão "Ativar" em um botão de limpeza sem escondê-lo
+                btnAtivar.innerText = "REMOVER DO PORTAL";
+                btnAtivar.style.background = "linear-gradient(135deg, #ff0055, #990033)";
+                btnAtivar.style.boxShadow = "0 4px 15px rgba(255, 0, 85, 0.4)";
+
+                ipInput.style.display = 'none';
+
+                ndef.addEventListener("reading", ({ serialNumber }) => {
+                    if (!serialNumber) return;
+                    const uidLido = serialNumber.toLowerCase();
+
+                    if (currentUID === uidLido) {
+                        limparPortal();
+                    } else {
+                        ativarSkylander(uidLido);
+                    }
+                });
+
+            } catch (error) {
+                statusDiv.innerText = `Erro ao acessar NFC: ${error.message || error}`;
+            }
+        });
+
+        function ativarSkylander(uid) {
+            currentUID = uid;
+            const serverHost = ipInput.value.trim();
+
+            portalRing.classList.add('active');
+            portalIcon.innerText = "⚡";
+            logDiv.innerText = `Skylander: ${uid}`;
+            
+            enviarParaPC(serverHost, uid, "presente");
+        }
+
+        function limparPortal() {
+            if (!currentUID) return;
+            const serverHost = ipInput.value.trim();
+
+            portalRing.classList.remove('active');
+            portalIcon.innerText = "🔮";
+            logDiv.innerText = "Portal Vazio";
+            
+            enviarParaPC(serverHost, currentUID, "removido");
+            currentUID = null;
+        }
+
+        function enviarParaPC(host, uid, status) {
+            let urlBase = host.startsWith('http') ? host : `http://${host}`;
+            const url = `${urlBase}/scan?uid=${uid}&status=${status}`;
+
+            fetch(url, { method: 'POST' })
+                .catch(() => statusDiv.innerText = "Erro ao conectar com o PC! Verifique o IP e o bloqueio HTTP.");
+        }
+    </script>
+</body>
+</html>
