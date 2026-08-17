@@ -3,22 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Skylanders Portal of Power</title>
+    <title>Skylanders Portal - WebNFC</title>
     <style>
         :root {
             --bg-color: #0b0c10;
-            --card-bg: rgba(31, 40, 51, 0.75);
-            --primary-glow: #8a2be2;
-            --text-main: #ffffff;
-            --text-sub: #c5c6c7;
+            --card-bg: #1f2833;
+            --primary: #8a2be2;
+            --accent-green: #00ff66;
+            --accent-red: #ff0055;
+            --text-color: #c5c6c7;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: radial-gradient(circle at center, #1f003b 0%, var(--bg-color) 80%);
-            color: var(--text-main);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: radial-gradient(circle at center, #1a0033 0%, var(--bg-color) 70%);
+            color: var(--text-color);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
@@ -28,87 +29,92 @@
         }
 
         .container {
-            background: var(--card-bg);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(138, 43, 226, 0.35);
-            border-radius: 24px;
-            padding: 28px;
+            background: rgba(31, 40, 51, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(138, 43, 226, 0.3);
+            border-radius: 20px;
+            padding: 30px;
             width: 100%;
-            max-width: 380px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.85);
+            max-width: 400px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
             text-align: center;
         }
 
         h1 {
-            font-size: 1.4rem;
+            font-size: 1.5rem;
             text-transform: uppercase;
             letter-spacing: 2px;
             color: #fff;
-            margin-bottom: 18px;
-            text-shadow: 0 0 12px var(--primary-glow);
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px var(--primary);
         }
 
-        /* Anel Mágico do Portal */
+        /* Portal Animação */
         .portal-ring {
-            width: 170px;
-            height: 170px;
+            width: 180px;
+            height: 180px;
             margin: 20px auto;
             border-radius: 50%;
-            border: 4px dashed var(--primary-glow);
+            border: 4px dashed var(--primary);
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 0 25px rgba(138, 43, 226, 0.4);
-            animation: girarPortal 12s linear infinite;
-            transition: border 0.4s ease, box-shadow 0.4s ease;
+            position: relative;
+            box-shadow: 0 0 20px rgba(138, 43, 226, 0.4);
+            animation: rotatePortal 12s linear infinite;
+            transition: all 0.4s ease;
         }
 
-        @keyframes girarPortal {
+        @keyframes rotatePortal {
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
 
         .portal-inner {
-            width: 130px;
-            height: 130px;
+            width: 140px;
+            height: 140px;
             border-radius: 50%;
-            background: radial-gradient(circle, rgba(138, 43, 226, 0.25) 0%, rgba(0,0,0,0.85) 100%);
+            background: radial-gradient(circle, rgba(138,43,226,0.2) 0%, rgba(0,0,0,0.8) 100%);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            transition: background 0.4s ease;
+            animation: pulsePortal 2s ease-in-out infinite alternate;
         }
 
+        @keyframes pulsePortal {
+            from { box-shadow: inset 0 0 10px var(--primary); }
+            to { box-shadow: inset 0 0 25px var(--primary); }
+        }
+
+        /* Modos Ativo / Inativo do Portal */
         .portal-ring.active {
-            animation: pulseAura 1.5s ease-in-out infinite alternate;
-            border-style: solid;
+            border: 4px solid var(--accent-green);
+            box-shadow: 0 0 35px var(--accent-green);
+            animation: none;
         }
 
-        @keyframes pulseAura {
-            from { transform: scale(1); }
-            to { transform: scale(1.03); }
+        .portal-ring.active .portal-inner {
+            background: radial-gradient(circle, rgba(0,255,102,0.3) 0%, rgba(0,0,0,0.9) 100%);
         }
 
-        /* Inputs e Botões */
         .ip-input {
             width: 100%;
             padding: 12px;
-            border-radius: 10px;
+            border-radius: 8px;
             border: 1px solid rgba(255, 255, 255, 0.2);
-            background: rgba(0, 0, 0, 0.6);
+            background: rgba(0, 0, 0, 0.5);
             color: #fff;
-            font-size: 0.95rem;
-            margin-bottom: 16px;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
             text-align: center;
-            outline: none;
         }
 
         .btn {
             width: 100%;
             padding: 14px;
             border: none;
-            border-radius: 10px;
+            border-radius: 8px;
             background: linear-gradient(135deg, #8a2be2, #4a00e0);
             color: #fff;
             font-weight: bold;
@@ -116,38 +122,23 @@
             text-transform: uppercase;
             cursor: pointer;
             box-shadow: 0 4px 15px rgba(138, 43, 226, 0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
         }
 
         .btn:active { transform: scale(0.98); }
 
-        /* Painel de Info do Skylander */
-        .info-card {
+        .status-badge {
             margin-top: 15px;
-            padding: 12px;
-            background: rgba(0, 0, 0, 0.4);
-            border-radius: 12px;
-            min-height: 85px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            gap: 4px;
+            font-size: 0.85rem;
+            color: #888;
         }
 
-        .sky-nome {
-            font-size: 1.2rem;
+        .log-text {
+            margin-top: 10px;
+            font-size: 1.1rem;
             font-weight: bold;
             color: #fff;
-        }
-
-        .sky-detalhes {
-            font-size: 0.85rem;
-            color: var(--text-sub);
-        }
-
-        .status-text {
-            margin-top: 12px;
-            font-size: 0.8rem;
-            color: #888;
+            min-height: 28px;
         }
     </style>
 </head>
@@ -160,25 +151,20 @@
 
         <div class="portal-ring" id="portalRing">
             <div class="portal-inner">
-                <span id="portalIcon" style="font-size: 2.8rem;">🔮</span>
+                <span id="portalIcon" style="font-size: 2.5rem;">🔮</span>
             </div>
         </div>
 
         <button id="btnAtivar" class="btn">Ativar Portal NFC</button>
 
-        <div class="info-card">
-            <div class="sky-nome" id="skyNome">Portal Vazio</div>
-            <div class="sky-detalhes" id="skyDetalhes">Aproxime um Skylander para ler</div>
-        </div>
-
-        <div class="status-text" id="status">Aguardando ativação...</div>
+        <div class="status-badge" id="status">Aguardando ativação...</div>
+        <div class="log-text" id="log">---</div>
     </div>
 
     <script>
         const btnAtivar = document.getElementById('btnAtivar');
         const statusDiv = document.getElementById('status');
-        const skyNome = document.getElementById('skyNome');
-        const skyDetalhes = document.getElementById('skyDetalhes');
+        const logDiv = document.getElementById('log');
         const portalRing = document.getElementById('portalRing');
         const portalIcon = document.getElementById('portalIcon');
         const ipInput = document.getElementById('ipInput');
@@ -197,7 +183,7 @@
                 const ndef = new NDEFReader();
                 await ndef.scan();
                 
-                statusDiv.innerText = "Portal Ativo! Encoste o Skylander no celular.";
+                statusDiv.innerText = "Portal Online! Aproxime o Skylander.";
                 btnAtivar.style.display = 'none';
                 ipInput.style.display = 'none';
 
@@ -206,7 +192,7 @@
                     lastSeenTime = Date.now();
                 });
 
-                // Polling a cada 0.5 segundos (500ms)
+                // Loop a cada 0.5 segundos (500ms)
                 pollTimer = setInterval(verificarEstadoNFC, 500);
 
             } catch (error) {
@@ -218,51 +204,24 @@
             const agora = Date.now();
             const serverHost = ipInput.value.trim();
 
-            // Se lido nos últimos 1.2 segundos -> Presente
             if (currentUID && (agora - lastSeenTime < 1200)) {
+                portalRing.classList.add('active');
+                portalIcon.innerText = "⚡";
+                logDiv.innerText = `Skylander: ${currentUID}`;
                 enviarParaPC(serverHost, currentUID, "presente");
-            } 
-            // Passou mais de 1.2s -> Removido
-            else if (currentUID) {
+            } else if (currentUID) {
+                portalRing.classList.remove('active');
+                portalIcon.innerText = "🔮";
+                logDiv.innerText = "Portal Vazio";
                 enviarParaPC(serverHost, currentUID, "removido");
                 currentUID = null;
             }
         }
 
         function enviarParaPC(host, uid, status) {
-            const url = `http://${host}/server.php?uid=${uid}&status=${status}`;
-
+            const url = `http://${host}/scan?uid=${uid}&status=${status}`;
             fetch(url, { method: 'POST' })
-                .then(res => res.json())
-                .then(data => {
-                    if (status === 'presente' && data.skylander) {
-                        const sky = data.skylander;
-                        
-                        // Atualiza a interface
-                        skyNome.innerText = sky.nome;
-                        skyDetalhes.innerText = `${sky.elemento} • ${sky.tipo}`;
-                        
-                        // Aplica a cor do elemento do Skylander no portal
-                        portalRing.classList.add('active');
-                        portalRing.style.borderColor = sky.cor;
-                        portalRing.style.boxShadow = `0 0 35px ${sky.cor}`;
-                        portalIcon.innerText = "⚡";
-                        statusDiv.innerText = `UID: ${uid}`;
-                    } else if (status === 'removido') {
-                        // Reseta a interface
-                        skyNome.innerText = "Portal Vazio";
-                        skyDetalhes.innerText = "Aproxime um Skylander para ler";
-                        
-                        portalRing.classList.remove('active');
-                        portalRing.style.borderColor = "";
-                        portalRing.style.boxShadow = "";
-                        portalIcon.innerText = "🔮";
-                        statusDiv.innerText = "Aguardando novo Skylander...";
-                    }
-                })
-                .catch(() => {
-                    statusDiv.innerText = "Erro ao conectar com o server.php local!";
-                });
+                .catch(() => statusDiv.innerText = "Erro ao conectar com o PC!");
         }
     </script>
 </body>
