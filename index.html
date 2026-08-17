@@ -3,30 +3,171 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal Skylander WebNFC (Polling 0.5s)</title>
+    <title>Skylanders Portal - WebNFC</title>
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 20px; background: #121212; color: white; }
-        button { padding: 15px 30px; font-size: 18px; border-radius: 8px; border: none; background: #6200ee; color: white; cursor: pointer; }
-        #status { margin-top: 20px; font-size: 16px; color: #03dac6; }
-        #log { margin-top: 10px; font-weight: bold; font-size: 20px; color: #ff0266; }
-        .active { color: #00e676 !important; }
+        :root {
+            --bg-color: #0b0c10;
+            --card-bg: #1f2833;
+            --primary: #8a2be2;
+            --accent-green: #00ff66;
+            --accent-red: #ff0055;
+            --text-color: #c5c6c7;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: radial-gradient(circle at center, #1a0033 0%, var(--bg-color) 70%);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(31, 40, 51, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(138, 43, 226, 0.3);
+            border-radius: 20px;
+            padding: 30px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #fff;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px var(--primary);
+        }
+
+        /* Portal Animação */
+        .portal-ring {
+            width: 180px;
+            height: 180px;
+            margin: 20px auto;
+            border-radius: 50%;
+            border: 4px dashed var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: 0 0 20px rgba(138, 43, 226, 0.4);
+            animation: rotatePortal 12s linear infinite;
+            transition: all 0.4s ease;
+        }
+
+        @keyframes rotatePortal {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .portal-inner {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(138,43,226,0.2) 0%, rgba(0,0,0,0.8) 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            animation: pulsePortal 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes pulsePortal {
+            from { box-shadow: inset 0 0 10px var(--primary); }
+            to { box-shadow: inset 0 0 25px var(--primary); }
+        }
+
+        /* Modos Ativo / Inativo do Portal */
+        .portal-ring.active {
+            border: 4px solid var(--accent-green);
+            box-shadow: 0 0 35px var(--accent-green);
+            animation: none;
+        }
+
+        .portal-ring.active .portal-inner {
+            background: radial-gradient(circle, rgba(0,255,102,0.3) 0%, rgba(0,0,0,0.9) 100%);
+        }
+
+        .ip-input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #8a2be2, #4a00e0);
+            color: #fff;
+            font-weight: bold;
+            font-size: 1rem;
+            text-transform: uppercase;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(138, 43, 226, 0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:active { transform: scale(0.98); }
+
+        .status-badge {
+            margin-top: 15px;
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        .log-text {
+            margin-top: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #fff;
+            min-height: 28px;
+        }
     </style>
 </head>
 <body>
 
-    <h1>Portal NFC no Navegador</h1>
-    <button id="btnAtivar">Ativar Leitor NFC</button>
-    
-    <div id="status">Aguardando ativação...</div>
-    <div id="log">---</div>
+    <div class="container">
+        <h1>Portal of Power</h1>
+
+        <input type="text" id="ipInput" class="ip-input" placeholder="IP do PC (ex: 192.168.1.15:5000)" value="192.168.1.15:5000">
+
+        <div class="portal-ring" id="portalRing">
+            <div class="portal-inner">
+                <span id="portalIcon" style="font-size: 2.5rem;">🔮</span>
+            </div>
+        </div>
+
+        <button id="btnAtivar" class="btn">Ativar Portal NFC</button>
+
+        <div class="status-badge" id="status">Aguardando ativação...</div>
+        <div class="log-text" id="log">---</div>
+    </div>
 
     <script>
         const btnAtivar = document.getElementById('btnAtivar');
         const statusDiv = document.getElementById('status');
         const logDiv = document.getElementById('log');
-
-        // Substitua pelo IP e porta do seu computador na rede local
-        const PC_SERVER_URL = 'http://192.168.1.15:5000/scan';
+        const portalRing = document.getElementById('portalRing');
+        const portalIcon = document.getElementById('portalIcon');
+        const ipInput = document.getElementById('ipInput');
 
         let currentUID = null;
         let lastSeenTime = 0;
@@ -34,7 +175,7 @@
 
         btnAtivar.addEventListener('click', async () => {
             if (!('NDEFReader' in window)) {
-                statusDiv.innerText = "Web NFC não suportado. Use o Google Chrome no Android.";
+                statusDiv.innerText = "Web NFC não suportado no navegador (Use Chrome Android).";
                 return;
             }
 
@@ -42,45 +183,45 @@
                 const ndef = new NDEFReader();
                 await ndef.scan();
                 
-                statusDiv.innerText = "Leitor ATIVO! Encoste o Skylander na traseira do celular.";
+                statusDiv.innerText = "Portal Online! Aproxime o Skylander.";
                 btnAtivar.style.display = 'none';
+                ipInput.style.display = 'none';
 
-                // Dispara toda vez que a antena detecta o chip
                 ndef.addEventListener("reading", ({ serialNumber }) => {
                     currentUID = serialNumber;
                     lastSeenTime = Date.now();
                 });
 
-                // Loop de verificação a cada 0.5 segundos (500ms)
+                // Loop a cada 0.5 segundos (500ms)
                 pollTimer = setInterval(verificarEstadoNFC, 500);
 
             } catch (error) {
-                statusDiv.innerText = `Erro ao iniciar NFC: ${error}`;
+                statusDiv.innerText = `Erro ao acessar NFC: ${error}`;
             }
         });
 
         function verificarEstadoNFC() {
             const agora = Date.now();
+            const serverHost = ipInput.value.trim();
 
-            // Se faz menos de 1.2 segundos que o boneco foi lido, ele continua no celular
             if (currentUID && (agora - lastSeenTime < 1200)) {
-                logDiv.innerText = `Skylander Presente: ${currentUID}`;
-                logDiv.className = "active";
-                enviarParaPC(currentUID, "presente");
-            } 
-            // Se passou mais de 1.2s sem leitura, o boneco foi REMOVIDO
-            else if (currentUID) {
-                logDiv.innerText = `Boneco Removido (${currentUID})`;
-                logDiv.className = "";
-                enviarParaPC(currentUID, "removido");
-                currentUID = null; // Limpa a memória
+                portalRing.classList.add('active');
+                portalIcon.innerText = "⚡";
+                logDiv.innerText = `Skylander: ${currentUID}`;
+                enviarParaPC(serverHost, currentUID, "presente");
+            } else if (currentUID) {
+                portalRing.classList.remove('active');
+                portalIcon.innerText = "🔮";
+                logDiv.innerText = "Portal Vazio";
+                enviarParaPC(serverHost, currentUID, "removido");
+                currentUID = null;
             }
         }
 
-        function enviarParaPC(uid, status) {
-            fetch(`${PC_SERVER_URL}?uid=${uid}&status=${status}`, { method: 'POST' })
-                .then(() => console.log(`[0.5s Loop] Enviado: ${uid} (${status})`))
-                .catch(err => console.error('Erro na rede:', err));
+        function enviarParaPC(host, uid, status) {
+            const url = `http://${host}/scan?uid=${uid}&status=${status}`;
+            fetch(url, { method: 'POST' })
+                .catch(() => statusDiv.innerText = "Erro ao conectar com o PC!");
         }
     </script>
 </body>
