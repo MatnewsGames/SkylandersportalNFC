@@ -10,7 +10,6 @@
             --card-bg: #1f2833;
             --primary: #8a2be2;
             --accent-green: #00ff66;
-            --accent-red: #ff0055;
             --text-color: #c5c6c7;
         }
 
@@ -49,7 +48,7 @@
             text-shadow: 0 0 10px var(--primary);
         }
 
-        /* Portal Animação */
+        /* Animação do Portal */
         .portal-ring {
             width: 180px;
             height: 180px;
@@ -87,15 +86,10 @@
             to { box-shadow: inset 0 0 25px var(--primary); }
         }
 
-        /* Modos Ativo / Inativo do Portal */
+        /* Portal Ativo */
         .portal-ring.active {
-            border: 4px solid var(--accent-green);
-            box-shadow: 0 0 35px var(--accent-green);
+            border-style: solid;
             animation: none;
-        }
-
-        .portal-ring.active .portal-inner {
-            background: radial-gradient(circle, rgba(0,255,102,0.3) 0%, rgba(0,0,0,0.9) 100%);
         }
 
         .ip-input {
@@ -127,18 +121,30 @@
 
         .btn:active { transform: scale(0.98); }
 
-        .status-badge {
+        .card-info {
             margin-top: 15px;
-            font-size: 0.85rem;
-            color: #888;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .log-text {
-            margin-top: 10px;
-            font-size: 1.1rem;
+        .sky-nome {
+            font-size: 1.2rem;
             font-weight: bold;
             color: #fff;
-            min-height: 28px;
+        }
+
+        .sky-tipo {
+            font-size: 0.9rem;
+            color: #aaa;
+            margin-top: 4px;
+        }
+
+        .status-badge {
+            margin-top: 12px;
+            font-size: 0.8rem;
+            color: #777;
         }
     </style>
 </head>
@@ -151,20 +157,34 @@
 
         <div class="portal-ring" id="portalRing">
             <div class="portal-inner">
-                <span id="portalIcon" style="font-size: 2.5rem;">🔮</span>
+                <span id="portalIcon" style="font-size: 2.8rem;">🔮</span>
             </div>
         </div>
 
         <button id="btnAtivar" class="btn">Ativar Portal NFC</button>
 
+        <div class="card-info">
+            <div class="sky-nome" id="skyNome">Portal Vazio</div>
+            <div class="sky-tipo" id="skyTipo">Aproxime um Skylander no celular</div>
+        </div>
+
         <div class="status-badge" id="status">Aguardando ativação...</div>
-        <div class="log-text" id="log">---</div>
     </div>
 
     <script>
+        // --- BANCO DE DADOS DE SKYLANDERS ---
+        // Adicione seus bonecos aqui relacionando o UID (em letras minúsculas)
+        const skylandersDB = {
+            "14:22:3b:14": { nome: "Spyro", elemento: "Magia 🔮", cor: "#8a2be2", icone: "🐉" },
+            // Exemplos adicionais que você pode alterar depois:
+            "04:11:22:33:44:55:66": { nome: "Gill Grunt", elemento: "Água 🌊", cor: "#00aaff", icone: "🐟" },
+            "04:aa:bb:cc:dd:ee:ff": { nome: "Trigger Happy", elemento: "Tech ⚙️", cor: "#ff9900", icone: "🔫" }
+        };
+
         const btnAtivar = document.getElementById('btnAtivar');
         const statusDiv = document.getElementById('status');
-        const logDiv = document.getElementById('log');
+        const skyNome = document.getElementById('skyNome');
+        const skyTipo = document.getElementById('skyTipo');
         const portalRing = document.getElementById('portalRing');
         const portalIcon = document.getElementById('portalIcon');
         const ipInput = document.getElementById('ipInput');
@@ -172,7 +192,6 @@
         let currentUID = null;
 
         btnAtivar.addEventListener('click', async () => {
-            // Se o botão já foi transformado em "Remover", aciona a função de limpeza
             if (btnAtivar.innerText === "REMOVER DO PORTAL") {
                 limparPortal();
                 return;
@@ -189,11 +208,9 @@
                 
                 statusDiv.innerText = "Portal Online! Aproxime o Skylander.";
                 
-                // Transforma o botão "Ativar" em um botão de limpeza sem escondê-lo
                 btnAtivar.innerText = "REMOVER DO PORTAL";
                 btnAtivar.style.background = "linear-gradient(135deg, #ff0055, #990033)";
                 btnAtivar.style.boxShadow = "0 4px 15px rgba(255, 0, 85, 0.4)";
-
                 ipInput.style.display = 'none';
 
                 ndef.addEventListener("reading", ({ serialNumber }) => {
@@ -216,31 +233,52 @@
             currentUID = uid;
             const serverHost = ipInput.value.trim();
 
-            portalRing.classList.add('active');
-            portalIcon.innerText = "⚡";
-            logDiv.innerText = `Skylander: ${uid}`;
+            // Busca no banco de dados pelo UID lido
+            const skylander = skylandersDB[uid] || {
+                nome: "Skylander Desconhecido",
+                elemento: "Elemento Desconhecido",
+                cor: "#00ff66",
+                icone: "⚡"
+            };
+
+            // Atualiza a tela com as informações do personagem
+            skyNome.innerText = skylander.nome;
+            skyTipo.innerText = skylander.elemento;
+            portalIcon.innerText = skylander.icone;
             
-            enviarParaPC(serverHost, uid, "presente");
+            portalRing.classList.add('active');
+            portalRing.style.borderColor = skylander.cor;
+            portalRing.style.boxShadow = `0 0 35px ${skylander.cor}`;
+
+            statusDiv.innerText = `Ativo | UID: ${uid}`;
+
+            enviarParaPC(serverHost, uid, "presente", skylander.nome);
         }
 
         function limparPortal() {
             if (!currentUID) return;
             const serverHost = ipInput.value.trim();
 
-            portalRing.classList.remove('active');
+            skyNome.innerText = "Portal Vazio";
+            skyTipo.innerText = "Aproxime um Skylander no celular";
             portalIcon.innerText = "🔮";
-            logDiv.innerText = "Portal Vazio";
+
+            portalRing.classList.remove('active');
+            portalRing.style.borderColor = "";
+            portalRing.style.boxShadow = "";
+
+            statusDiv.innerText = "Aguardando novo Skylander...";
             
-            enviarParaPC(serverHost, currentUID, "removido");
+            enviarParaPC(serverHost, currentUID, "removido", "");
             currentUID = null;
         }
 
-        function enviarParaPC(host, uid, status) {
+        function enviarParaPC(host, uid, status, nome) {
             let urlBase = host.startsWith('http') ? host : `http://${host}`;
-            const url = `${urlBase}/scan?uid=${uid}&status=${status}`;
+            const url = `${urlBase}/scan?uid=${uid}&status=${status}&nome=${encodeURIComponent(nome)}`;
 
             fetch(url, { method: 'POST' })
-                .catch(() => statusDiv.innerText = "Erro ao conectar com o PC! Verifique o IP e o bloqueio HTTP.");
+                .catch(() => statusDiv.innerText = "Erro ao conectar com o PC!");
         }
     </script>
 </body>
