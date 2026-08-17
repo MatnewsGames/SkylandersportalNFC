@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal Skylander WebNFC</title>
+    <title>Portal Skylander WebNFC (Polling 1s)</title>
     <style>
         body { font-family: sans-serif; text-align: center; padding: 20px; background: #121212; color: white; }
         button { padding: 15px 30px; font-size: 18px; border-radius: 8px; border: none; background: #6200ee; color: white; cursor: pointer; }
         #status { margin-top: 20px; font-size: 16px; color: #03dac6; }
         #log { margin-top: 10px; font-weight: bold; font-size: 20px; color: #ff0266; }
+        .active { color: #00e676 !important; }
     </style>
 </head>
 <body>
@@ -24,13 +25,16 @@
         const statusDiv = document.getElementById('status');
         const logDiv = document.getElementById('log');
 
-        // IP e Porta do seu computador na rede local
+        // Substitua pelo IP e porta do seu computador na rede local
         const PC_SERVER_URL = 'http://192.168.1.15:5000/scan';
 
+        let currentUID = null;
+        let lastSeenTime = 0;
+        let pollTimer = null;
+
         btnAtivar.addEventListener('click', async () => {
-            // Verifica se o navegador suporta Web NFC
             if (!('NDEFReader' in window)) {
-                statusDiv.innerText = "Web NFC não é suportado neste navegador/dispositivo (use o Chrome no Android).";
+                statusDiv.innerText = "Web NFC não suportado. Use o Google Chrome no Android.";
                 return;
             }
 
@@ -41,28 +45,42 @@
                 statusDiv.innerText = "Leitor ATIVO! Encoste o Skylander na traseira do celular.";
                 btnAtivar.style.display = 'none';
 
-                // Disparado sempre que uma tag NFC é encostada
+                // Dispara toda vez que a antena detecta o chip
                 ndef.addEventListener("reading", ({ serialNumber }) => {
-                    logDiv.innerText = `UID Lido: ${serialNumber}`;
-                    
-                    // Envia automaticamente os dados para o seu PC via Wi-Fi
-                    enviarParaPC(serialNumber);
+                    currentUID = serialNumber;
+                    lastSeenTime = Date.now();
                 });
 
-                ndef.addEventListener("readingerror", () => {
-                    statusDiv.innerText = "Erro ao ler a tag NFC. Tente aproximar novamente.";
-                });
+                // Loop de verificação a cada 1 segundo (Economiza Bateria e Rede)
+                pollTimer = setInterval(verificarEstadoNFC, 1000);
 
             } catch (error) {
                 statusDiv.innerText = `Erro ao iniciar NFC: ${error}`;
             }
         });
 
-        // Função que transmite o dado automaticamente via HTTP
-        function enviarParaPC(uid) {
-            fetch(`${PC_SERVER_URL}?uid=${uid}`, { method: 'POST' })
-                .then(response => console.log('Enviado com sucesso para o PC!'))
-                .catch(err => console.error('Erro ao enviar para o PC:', err));
+        function verificarEstadoNFC() {
+            const agora = Date.now();
+
+            // Se faz menos de 2 segundos que o boneco foi lido, ele continua em cima do celular
+            if (currentUID && (agora - lastSeenTime < 2000)) {
+                logDiv.innerText = `Skylander Presente: ${currentUID}`;
+                logDiv.className = "active";
+                enviarParaPC(currentUID, "presente");
+            } 
+            // Se passou mais de 2s sem sinal, o boneco foi REMOVIDO do celular
+            else if (currentUID) {
+                logDiv.innerText = `Boneco Removido (${currentUID})`;
+                logDiv.className = "";
+                enviarParaPC(currentUID, "removido");
+                currentUID = null; // Limpa a memória
+            }
+        }
+
+        function enviarParaPC(uid, status) {
+            fetch(`${PC_SERVER_URL}?uid=${uid}&status=${status}`, { method: 'POST' })
+                .then(() => console.log(`[1s Loop] Enviado: ${uid} (${status})`))
+                .catch(err => console.error('Erro na rede:', err));
         }
     </script>
 </body>
