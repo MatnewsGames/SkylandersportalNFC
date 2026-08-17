@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal Skylander WebNFC (Polling 1s)</title>
+    <title>Portal Skylander WebNFC (Polling 0.5s)</title>
     <style>
         body { font-family: sans-serif; text-align: center; padding: 20px; background: #121212; color: white; }
         button { padding: 15px 30px; font-size: 18px; border-radius: 8px; border: none; background: #6200ee; color: white; cursor: pointer; }
@@ -51,8 +51,8 @@
                     lastSeenTime = Date.now();
                 });
 
-                // Loop de verificação a cada 1 segundo (Economiza Bateria e Rede)
-                pollTimer = setInterval(verificarEstadoNFC, 1000);
+                // Loop de verificação a cada 0.5 segundos (500ms)
+                pollTimer = setInterval(verificarEstadoNFC, 500);
 
             } catch (error) {
                 statusDiv.innerText = `Erro ao iniciar NFC: ${error}`;
@@ -62,13 +62,13 @@
         function verificarEstadoNFC() {
             const agora = Date.now();
 
-            // Se faz menos de 2 segundos que o boneco foi lido, ele continua em cima do celular
-            if (currentUID && (agora - lastSeenTime < 2000)) {
+            // Se faz menos de 1.2 segundos que o boneco foi lido, ele continua no celular
+            if (currentUID && (agora - lastSeenTime < 1200)) {
                 logDiv.innerText = `Skylander Presente: ${currentUID}`;
                 logDiv.className = "active";
                 enviarParaPC(currentUID, "presente");
             } 
-            // Se passou mais de 2s sem sinal, o boneco foi REMOVIDO do celular
+            // Se passou mais de 1.2s sem leitura, o boneco foi REMOVIDO
             else if (currentUID) {
                 logDiv.innerText = `Boneco Removido (${currentUID})`;
                 logDiv.className = "";
@@ -79,7 +79,7 @@
 
         function enviarParaPC(uid, status) {
             fetch(`${PC_SERVER_URL}?uid=${uid}&status=${status}`, { method: 'POST' })
-                .then(() => console.log(`[1s Loop] Enviado: ${uid} (${status})`))
+                .then(() => console.log(`[0.5s Loop] Enviado: ${uid} (${status})`))
                 .catch(err => console.error('Erro na rede:', err));
         }
     </script>
